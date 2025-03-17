@@ -194,13 +194,14 @@ class Database
      * 
      * @param  string $table table name
      * @param  array $data  array of columns and values
-     * @param  array $where array of columns and values
+     * @param  object $where array of columns and values or string of query
+     * @param  array $args params of query
      */
-    public function update($table, $data, $where)
+    public function update($table, $data, $where, $args = [])
     {
         //collect the values from data and where
         $values = [];
-        
+
         //setup fields
         $fieldDetails = null;
         foreach ($data as $key => $value) {
@@ -212,16 +213,30 @@ class Database
         
         //setup where 
         $whereDetails = null;
-        $i = 0;
-        foreach ($where as $key => $value) {
-            $key = '`' . trim($key, '`') . '`';
-            $whereDetails .= $i == 0 ? "$key = ?" : " AND $key = ?";
-            $values[] = $value;
-            $i++;
+        if (is_string($where)) {
+            $where = trim($where);
+            $whereDetails = $where ?: '';
+            $values = array_merge($values, $args);
         }
-        
-        $stmt = $this->run("UPDATE $table SET $fieldDetails WHERE $whereDetails", $values);
-        
+        else {
+            $i = 0;
+            foreach ($where as $key => $value) {
+                $key = '`' . trim($key, '`') . '`';
+                $whereDetails .= $i == 0 ? "$key = ?" : " AND $key = ?";
+                $values[] = $value;
+                $i++;
+            }
+        }
+
+        // build SQL statement
+        $sql = "UPDATE $table SET $fieldDetails";
+        if ($whereDetails) {
+            $sql .= " WHERE $whereDetails";
+        }
+
+        //execute query
+        $stmt = $this->run($sql, $values);
+
         return $stmt->rowCount();
     }
 
