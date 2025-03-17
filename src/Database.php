@@ -225,6 +225,46 @@ class Database
         return $stmt->rowCount();
     }
 
+
+    /**
+     * update record
+     *
+     * @param  string $table table name
+     * @param  array $data  array of columns and values
+     * @param  string $where string of query
+     * @param  array $args params of query
+     */
+    public function updateByWhere($table, $data, $where, $args = [])
+    {
+        //collect the values from data and where
+        $values = [];
+
+        //setup fields
+        $fieldDetails = '';
+        foreach ($data as $key => $value) {
+            $key = '`' . trim($key, '`') . '`';
+            $fieldDetails .= "$key = ?,";
+            $values[] = $value;
+        }
+        $fieldDetails = rtrim($fieldDetails, ',');
+
+        //setup where
+        $where = trim($where);
+        $whereDetails = $where ?: '';
+        $values = array_merge($values, $args);
+
+        // build SQL statement
+        $sql = "UPDATE $table SET $fieldDetails";
+        if ($whereDetails) {
+            $sql .= " WHERE $whereDetails";
+        }
+
+        //execute query
+        $stmt = $this->run($sql, $values);
+
+        return $stmt->rowCount();
+    }
+
     /**
      * Delete records
      * 
